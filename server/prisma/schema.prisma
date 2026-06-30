@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  jobRole   String
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  status    String    @default("active") // active | completed
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  messages  Message[]
+  feedback  Feedback?
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  role      String   // "assistant" | "user"
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id                 String   @id @default(uuid())
+  sessionId          String   @unique
+  session            Session  @relation(fields: [sessionId], references: [id])
+  overallScore       Int
+  communicationScore Int
+  starStructureScore Int
+  selfAwarenessScore Int
+  strengths          String
+  improvements       String
+  fullReport         String
+  createdAt          DateTime @default(now())
+}
