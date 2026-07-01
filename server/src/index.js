@@ -10,14 +10,29 @@ const feedbackRoutes = require('./routes/feedback');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+// ================= CORS =================
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ai-mock-interview-platform-bay.vercel.app",
+  "https://ai-mock-interview-platform-51gnb7qdy-shreya-s-projects7.vercel.app",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 // Raw body for Vapi webhook signature verification
-// Must come BEFORE express.json() for the webhook route
 app.use('/api/interview/vapi-webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
@@ -28,15 +43,20 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/feedback', feedbackRoutes);
 
-// Health check
+// Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Global error handler
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Something went wrong on the server.' });
+  console.error(err);
+  res.status(500).json({
+    error: err.message || 'Something went wrong.',
+  });
 });
 
 app.listen(PORT, () => {
